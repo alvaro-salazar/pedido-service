@@ -1,0 +1,21 @@
+services:
+
+  pedido-postgres:
+    image: postgres:16-alpine
+    container_name: pedido_db
+    environment:
+      POSTGRES_DB: pedidodb
+      POSTGRES_USER: pedido
+      POSTGRES_PASSWORD: pedido123
+    ports:
+      - "5434:5432"
+    volumes:
+      - pedido_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pedido -d pedidodb"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pedido_pgdata:

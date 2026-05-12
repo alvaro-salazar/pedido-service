@@ -1,0 +1,29 @@
+### Variables — reemplaza con tu token real
+@baseUrl = http://localhost:8084
+@token = TU_TOKEN_AQUI
+
+### Crear pedido
+POST {{baseUrl}}/api/v1/pedidos
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "clienteId": 1,
+  "productoId": 1,
+  "cantidad": 3
+}
+
+### Listar pedidos
+GET {{baseUrl}}/api/v1/pedidos
+Authorization: Bearer {{token}}
+
+### Obtener pedido por ID
+GET {{baseUrl}}/api/v1/pedidos/1
+Authorization: Bearer {{token}}
+
+### Cambiar estado a CONFIRMADO (requiere rol ADMIN)
+PATCH {{baseUrl}}/api/v1/pedidos/1/estado?nuevoEstado=CONFIRMADO
+Authorization: Bearer {{token}}
+
+### Health check
+GET http://localhost:8085/actuator/health
