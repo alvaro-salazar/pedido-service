@@ -7,8 +7,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -23,12 +21,9 @@ public class PedidoRestController {
     @PostMapping
     @PreAuthorize("hasRole('USER')")
     public ResponseEntity<PedidoResponse> crearPedido(
-            @Valid @RequestBody PedidoRequest request,
-            @AuthenticationPrincipal Jwt jwt) {
-
-        String bearerToken = jwt.getTokenValue();
-        PedidoResponse response = pedidoService.crearPedido(request, bearerToken);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+            @Valid @RequestBody PedidoRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(pedidoService.crearPedido(request));
     }
 
     @GetMapping

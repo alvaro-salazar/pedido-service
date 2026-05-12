@@ -5,9 +5,9 @@ import com.denkitronik.pedidoservice.delivery.rest.PedidoResponse;
 import com.denkitronik.pedidoservice.domain.entities.EstadoPedido;
 import com.denkitronik.pedidoservice.domain.entities.Pedido;
 import com.denkitronik.pedidoservice.domain.repositories.IPedidoRepository;
-import com.denkitronik.pedidoservice.infrastructure.clients.ClienteClient;
+import com.denkitronik.pedidoservice.infrastructure.clients.ClienteFeignClient;
 import com.denkitronik.pedidoservice.infrastructure.clients.ClienteDTO;
-import com.denkitronik.pedidoservice.infrastructure.clients.ProductoClient;
+import com.denkitronik.pedidoservice.infrastructure.clients.ProductoFeignClient;
 import com.denkitronik.pedidoservice.infrastructure.clients.ProductoDTO;
 import com.denkitronik.pedidoservice.infrastructure.clients.RecursoNoEncontradoException;
 import lombok.RequiredArgsConstructor;
@@ -24,19 +24,19 @@ import java.util.List;
 public class PedidoServiceImpl implements IPedidoService {
 
     private final IPedidoRepository pedidoRepository;
-    private final ClienteClient clienteClient;
-    private final ProductoClient productoClient;
+    private final ClienteFeignClient clienteClient;
+    private final ProductoFeignClient productoClient;
 
     @Override
     @Transactional
-    public PedidoResponse crearPedido(PedidoRequest request, String bearerToken) {
+    public PedidoResponse crearPedido(PedidoRequest request) {
         log.info("Creando pedido: clienteId={}, productoId={}, cantidad={}",
                 request.clienteId(), request.productoId(), request.cantidad());
 
-        ClienteDTO cliente = clienteClient.obtenerCliente(request.clienteId(), bearerToken);
+        ClienteDTO cliente = clienteClient.obtenerCliente(request.clienteId());
         log.debug("Cliente validado: {}", cliente.nombre());
 
-        ProductoDTO producto = productoClient.obtenerProducto(request.productoId(), bearerToken);
+        ProductoDTO producto = productoClient.obtenerProducto(request.productoId());
         log.debug("Producto obtenido: {} a precio {}", producto.nombre(), producto.precio());
 
         BigDecimal total = producto.precio()
@@ -61,8 +61,9 @@ public class PedidoServiceImpl implements IPedidoService {
     @Transactional(readOnly = true)
     public List<PedidoResponse> listarPedidos() {
         return pedidoRepository.findAll().stream()
-                .map(p -> toResponse(p, "Cliente #" + p.getClienteId(),
-                                        "Producto #" + p.getProductoId()))
+                .map(p -> toResponse(p,
+                        "Cliente #" + p.getClienteId(),
+                        "Producto #" + p.getProductoId()))
                 .toList();
     }
 
