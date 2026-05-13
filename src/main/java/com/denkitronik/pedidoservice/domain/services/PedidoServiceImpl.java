@@ -10,6 +10,8 @@ import com.denkitronik.pedidoservice.infrastructure.clients.ClienteDTO;
 import com.denkitronik.pedidoservice.infrastructure.clients.ProductoFeignClient;
 import com.denkitronik.pedidoservice.infrastructure.clients.ProductoDTO;
 import com.denkitronik.pedidoservice.infrastructure.clients.RecursoNoEncontradoException;
+import com.denkitronik.pedidoservice.infrastructure.messaging.PedidoCreadoEvent;
+import com.denkitronik.pedidoservice.infrastructure.messaging.PedidoEventPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -26,6 +28,7 @@ public class PedidoServiceImpl implements IPedidoService {
     private final IPedidoRepository pedidoRepository;
     private final ClienteFeignClient clienteClient;
     private final ProductoFeignClient productoClient;
+    private final PedidoEventPublisher eventPublisher;
 
     @Override
     @Transactional
@@ -53,6 +56,18 @@ public class PedidoServiceImpl implements IPedidoService {
 
         pedido = pedidoRepository.save(pedido);
         log.info("Pedido creado con id={}, total={}", pedido.getId(), pedido.getTotal());
+
+        PedidoCreadoEvent evento = new PedidoCreadoEvent(
+                pedido.getId(),
+                pedido.getClienteId(),
+                cliente.nombre(),
+                pedido.getProductoId(),
+                producto.nombre(),
+                pedido.getCantidad(),
+                pedido.getTotal(),
+                pedido.getFechaCreacion()
+        );
+        eventPublisher.publicarPedidoCreado(evento);
 
         return toResponse(pedido, cliente.nombre(), producto.nombre());
     }
