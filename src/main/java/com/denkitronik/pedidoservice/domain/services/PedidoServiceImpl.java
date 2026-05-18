@@ -12,6 +12,9 @@ import com.denkitronik.pedidoservice.infrastructure.clients.ProductoDTO;
 import com.denkitronik.pedidoservice.infrastructure.clients.RecursoNoEncontradoException;
 import com.denkitronik.pedidoservice.infrastructure.messaging.PedidoCreadoEvent;
 import com.denkitronik.pedidoservice.infrastructure.messaging.PedidoEventPublisher;
+import com.denkitronik.pedidoservice.infrastructure.pago.PagoIniciarRequest;
+import com.denkitronik.pedidoservice.infrastructure.pago.PagoIniciarResponse;
+import com.denkitronik.pedidoservice.infrastructure.pago.PagoServiceClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -29,6 +32,7 @@ public class PedidoServiceImpl implements IPedidoService {
     private final ClienteFeignClient clienteClient;
     private final ProductoFeignClient productoClient;
     private final PedidoEventPublisher eventPublisher;
+    private final PagoServiceClient pagoServiceClient;
 
     @Override
     @Transactional
@@ -69,7 +73,7 @@ public class PedidoServiceImpl implements IPedidoService {
         );
         eventPublisher.publicarPedidoCreado(evento);
 
-        return toResponse(pedido, cliente.nombre(), producto.nombre());
+        return toResponse(pedido, cliente.nombre(), producto.nombre(), null);
     }
 
     @Override
@@ -78,7 +82,8 @@ public class PedidoServiceImpl implements IPedidoService {
         return pedidoRepository.findAll().stream()
                 .map(p -> toResponse(p,
                         "Cliente #" + p.getClienteId(),
-                        "Producto #" + p.getProductoId()))
+                        "Producto #" + p.getProductoId(),
+                        null))
                 .toList();
     }
 
@@ -89,7 +94,8 @@ public class PedidoServiceImpl implements IPedidoService {
                 .orElseThrow(() -> new RecursoNoEncontradoException("Pedido no encontrado: " + id));
         return toResponse(pedido,
                 "Cliente #" + pedido.getClienteId(),
-                "Producto #" + pedido.getProductoId());
+                "Producto #" + pedido.getProductoId(),
+                null);
     }
 
     @Override
@@ -102,10 +108,37 @@ public class PedidoServiceImpl implements IPedidoService {
         log.info("Estado del pedido {} cambiado a {}", id, nuevoEstado);
         return toResponse(pedido,
                 "Cliente #" + pedido.getClienteId(),
-                "Producto #" + pedido.getProductoId());
+                "Producto #" + pedido.getProductoId(),
+                null);
     }
 
-    private PedidoResponse toResponse(Pedido pedido, String clienteNombre, String productoNombre) {
+    @Override
+    @Transactional
+    public PedidoResponse iniciarPago(Long pedidoId) {
+        Pedido pedido = pedidoRepository.findById(pedidoId)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Pedido no encontrado: " + pedidoId));
+
+        if (pedido.getEstado() != EstadoPedido.PENDIENTE) {
+            throw new IllegalStateException(
+                "Solo se puede iniciar pago de pedidos en estado PENDIENTE. Estado actual: "
+                + pedido.getEstado());
+        }
+
+        String descripcion = "Pedido #" + pedidoId + " - La Fogata Digital";
+        PagoIniciarRequest request = new PagoIniciarRequest(pedidoId, pedido.getTotal(), descripcion);
+        PagoIniciarResponse pagoResponse = pagoServiceClient.iniciarPago(request);
+
+        pedido.setPagoPreferenciaId(String.valueOf(pagoResponse.pagoId()));
+        pedidoRepository.save(pedido);
+
+        log.info("Pago iniciado para pedido {}, checkoutUrl={}", pedidoId, pagoResponse.checkoutUrl());
+        return toResponse(pedido,
+                "Cliente #" + pedido.getClienteId(),
+                "Producto #" + pedido.getProductoId(),
+                pagoResponse.checkoutUrl());
+    }
+
+    private PedidoResponse toResponse(Pedido pedido, String clienteNombre, String productoNombre, String checkoutUrl) {
         return new PedidoResponse(
                 pedido.getId(),
                 pedido.getClienteId(),
@@ -116,7 +149,8 @@ public class PedidoServiceImpl implements IPedidoService {
                 pedido.getPrecioUnitario(),
                 pedido.getTotal(),
                 pedido.getEstado(),
-                pedido.getFechaCreacion()
+                pedido.getFechaCreacion(),
+                checkoutUrl
         );
     }
 }

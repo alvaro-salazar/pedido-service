@@ -14,5 +14,6 @@ public record PedidoResponse(
     BigDecimal precioUnitario,
     BigDecimal total,
     EstadoPedido estado,
-    LocalDateTime fechaCreacion
+    LocalDateTime fechaCreacion,
+    String checkoutUrl
 ) {}

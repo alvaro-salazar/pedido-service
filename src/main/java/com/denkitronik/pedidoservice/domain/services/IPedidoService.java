@@ -10,4 +10,5 @@ public interface IPedidoService {
     List<PedidoResponse> listarPedidos();
     PedidoResponse obtenerPedido(Long id);
     PedidoResponse cambiarEstado(Long id, EstadoPedido nuevoEstado);
+    PedidoResponse iniciarPago(Long pedidoId);
 }

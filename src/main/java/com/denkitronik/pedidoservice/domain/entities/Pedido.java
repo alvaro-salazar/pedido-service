@@ -41,4 +41,7 @@ public class Pedido {
     @Column(nullable = false)
     @Builder.Default
     private LocalDateTime fechaCreacion = LocalDateTime.now();
+
+    @Column(name = "pago_preferencia_id")
+    private String pagoPreferenciaId;
 }

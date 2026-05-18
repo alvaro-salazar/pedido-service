@@ -45,4 +45,10 @@ public class PedidoRestController {
             @RequestParam EstadoPedido nuevoEstado) {
         return ResponseEntity.ok(pedidoService.cambiarEstado(id, nuevoEstado));
     }
+
+    @PostMapping("/{id}/pago")
+    @PreAuthorize("hasAnyRole('USER','ADMIN')")
+    public ResponseEntity<PedidoResponse> iniciarPago(@PathVariable Long id) {
+        return ResponseEntity.ok(pedidoService.iniciarPago(id));
+    }
 }
