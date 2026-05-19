@@ -9,9 +9,8 @@ import org.springframework.web.client.RestClient;
 @Configuration
 public class RestClientConfig {
 
-    @Bean
-    @Qualifier("pagoServiceClient")
-    public RestClient pagoServiceClient(
+    @Bean("pagoRestClient")
+    public RestClient pagoRestClient(
             @Value("${services.pago.base-url}") String baseUrl) {
         return RestClient.builder()
                 .baseUrl(baseUrl)

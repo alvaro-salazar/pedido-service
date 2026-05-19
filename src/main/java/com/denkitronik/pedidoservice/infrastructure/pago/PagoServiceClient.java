@@ -12,7 +12,7 @@ public class PagoServiceClient {
 
     private final RestClient client;
 
-    public PagoServiceClient(@Qualifier("pagoServiceClient") RestClient client) {
+    public PagoServiceClient(@Qualifier("pagoRestClient") RestClient client) {
         this.client = client;
     }
 
