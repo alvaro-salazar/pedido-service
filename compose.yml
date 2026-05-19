@@ -51,5 +51,27 @@ services:
     depends_on:
       - kafka
 
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.2
+    container_name: pedido_keycloak
+    command: start-dev --import-realm
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_HTTP_PORT: 8090
+      KC_HOSTNAME: localhost
+      KC_HOSTNAME_PORT: 8090
+      KC_HOSTNAME_STRICT: "false"
+    ports:
+      - "8090:8090"
+    volumes:
+      - ./keycloak:/opt/keycloak/data/import
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8090/realms/master > /dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
 volumes:
   pedido_pgdata:

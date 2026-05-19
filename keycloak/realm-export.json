@@ -1,0 +1,66 @@
+{
+  "realm": "curso-springboot",
+  "enabled": true,
+  "clients": [
+    {
+      "clientId": "cliente-service",
+      "enabled": true,
+      "publicClient": true,
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [],
+      "webOrigins": []
+    }
+  ],
+  "roles": {
+    "realm": [
+      {
+        "name": "ADMIN"
+      },
+      {
+        "name": "USER"
+      }
+    ]
+  },
+  "users": [
+    {
+      "username": "alice",
+      "enabled": true,
+      "emailVerified": true,
+      "requiredActions": [],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "alice123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "USER"
+      ],
+      "firstName": "Alice",
+      "lastName": "Test",
+      "email": "alice@test.com"
+    },
+    {
+      "username": "admin_user",
+      "enabled": true,
+      "emailVerified": true,
+      "requiredActions": [],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "admin123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "ADMIN"
+      ],
+      "firstName": "Admin",
+      "lastName": "User",
+      "email": "admin@test.com"
+    }
+  ]
+}
