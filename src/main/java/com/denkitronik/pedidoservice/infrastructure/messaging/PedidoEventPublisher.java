@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
@@ -31,7 +32,7 @@ public class PedidoEventPublisher {
      * cuando la transaccion Kafka haga commit.
      */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    @Transactional(transactionManager = "kafkaTransactionManager")
+    @Transactional(transactionManager = "kafkaTransactionManager", propagation = Propagation.REQUIRES_NEW)
     public void onPedidoCreado(PedidoCreadoDomainEvent event) {
         Pedido pedido = event.pedido();
         var payload = new PedidoCreadoPayload(
@@ -58,7 +59,7 @@ public class PedidoEventPublisher {
      * como consecuencia de un evento de pago (PagoConfirmado, PagoRechazado, etc.).
      */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    @Transactional(transactionManager = "kafkaTransactionManager")
+    @Transactional(transactionManager = "kafkaTransactionManager", propagation = Propagation.REQUIRES_NEW)
     public void onPedidoActualizado(PedidoActualizadoDomainEvent event) {
         Pedido pedido = event.pedido();
         var payload = new PedidoActualizadoPayload(
