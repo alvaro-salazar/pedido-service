@@ -4,19 +4,19 @@ import com.denkitronik.pedidoservice.delivery.rest.PedidoRequest;
 import com.denkitronik.pedidoservice.delivery.rest.PedidoResponse;
 import com.denkitronik.pedidoservice.domain.entities.EstadoPedido;
 import com.denkitronik.pedidoservice.domain.entities.Pedido;
+import com.denkitronik.pedidoservice.domain.events.PedidoCreadoDomainEvent;
 import com.denkitronik.pedidoservice.domain.repositories.IPedidoRepository;
 import com.denkitronik.pedidoservice.infrastructure.clients.ClienteFeignClient;
 import com.denkitronik.pedidoservice.infrastructure.clients.ClienteDTO;
 import com.denkitronik.pedidoservice.infrastructure.clients.ProductoFeignClient;
 import com.denkitronik.pedidoservice.infrastructure.clients.ProductoDTO;
 import com.denkitronik.pedidoservice.infrastructure.clients.RecursoNoEncontradoException;
-import com.denkitronik.pedidoservice.infrastructure.messaging.PedidoCreadoEvent;
-import com.denkitronik.pedidoservice.infrastructure.messaging.PedidoEventPublisher;
 import com.denkitronik.pedidoservice.infrastructure.pago.PagoIniciarRequest;
 import com.denkitronik.pedidoservice.infrastructure.pago.PagoIniciarResponse;
 import com.denkitronik.pedidoservice.infrastructure.pago.PagoServiceClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,7 +31,7 @@ public class PedidoServiceImpl implements IPedidoService {
     private final IPedidoRepository pedidoRepository;
     private final ClienteFeignClient clienteClient;
     private final ProductoFeignClient productoClient;
-    private final PedidoEventPublisher eventPublisher;
+    private final ApplicationEventPublisher applicationEventPublisher;
     private final PagoServiceClient pagoServiceClient;
 
     @Override
@@ -61,17 +61,9 @@ public class PedidoServiceImpl implements IPedidoService {
         pedido = pedidoRepository.save(pedido);
         log.info("Pedido creado con id={}, total={}", pedido.getId(), pedido.getTotal());
 
-        PedidoCreadoEvent evento = new PedidoCreadoEvent(
-                pedido.getId(),
-                pedido.getClienteId(),
-                cliente.nombre(),
-                pedido.getProductoId(),
-                producto.nombre(),
-                pedido.getCantidad(),
-                pedido.getTotal(),
-                pedido.getFechaCreacion()
-        );
-        eventPublisher.publicarPedidoCreado(evento);
+        // Publicar evento de dominio Spring (NO Kafka directamente).
+        // PedidoEventPublisher escuchara este evento DESPUES del commit de BD.
+        applicationEventPublisher.publishEvent(new PedidoCreadoDomainEvent(pedido));
 
         return toResponse(pedido, cliente.nombre(), producto.nombre(), null);
     }
