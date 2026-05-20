@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
@@ -22,10 +23,15 @@ public class PedidoEventPublisher {
 
     /**
      * Escucha PedidoCreadoDomainEvent y lo publica a Kafka SOLO despues del commit de BD.
-     * TransactionPhase.AFTER_COMMIT garantiza que si la transaccion hace rollback,
-     * este metodo nunca se ejecuta -- no hay eventos fantasma.
+     *
+     * @Transactional(kafkaTransactionManager) abre una transaccion Kafka:
+     * todos los sends dentro de este metodo son atomicos. Si falla el send
+     * a pedidos.auditoria, el send a pedidos.creados tambien hace rollback.
+     * El consumer con isolation.level=read_committed solo vera estos mensajes
+     * cuando la transaccion Kafka haga commit.
      */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Transactional(transactionManager = "kafkaTransactionManager")
     public void onPedidoCreado(PedidoCreadoDomainEvent event) {
         Pedido pedido = event.pedido();
         var payload = new PedidoCreadoPayload(
@@ -37,18 +43,14 @@ public class PedidoEventPublisher {
             pedido.getEstado().name()
         );
         var evento = EventoBase.of("PedidoCreado", payload);
-        kafkaTemplate.send(KafkaConfig.TOPIC_PEDIDOS_CREADOS, pedido.getId().toString(), evento)
-            .whenComplete((result, ex) -> {
-                if (ex == null) {
-                    log.info("Publicado PedidoCreado: pedidoId={} partition={} offset={}",
-                        pedido.getId(),
-                        result.getRecordMetadata().partition(),
-                        result.getRecordMetadata().offset());
-                } else {
-                    log.error("Error publicando PedidoCreado para pedidoId={}: {}",
-                        pedido.getId(), ex.getMessage());
-                }
-            });
+
+        // Send 1: topic de negocio (consumers lo procesan)
+        kafkaTemplate.send(KafkaConfig.TOPIC_PEDIDOS_CREADOS, pedido.getId().toString(), evento);
+
+        // Send 2: topic de auditoria (ambos van en la misma transaccion Kafka)
+        kafkaTemplate.send(KafkaConfig.TOPIC_PEDIDOS_AUDITORIA, pedido.getId().toString(), evento);
+
+        log.info("Publicado PedidoCreado (tx Kafka): pedidoId={}", pedido.getId());
     }
 
     /**
@@ -56,6 +58,7 @@ public class PedidoEventPublisher {
      * como consecuencia de un evento de pago (PagoConfirmado, PagoRechazado, etc.).
      */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Transactional(transactionManager = "kafkaTransactionManager")
     public void onPedidoActualizado(PedidoActualizadoDomainEvent event) {
         Pedido pedido = event.pedido();
         var payload = new PedidoActualizadoPayload(
@@ -64,19 +67,14 @@ public class PedidoEventPublisher {
             pedido.getEstado().name()
         );
         var evento = EventoBase.of("PedidoActualizado", payload);
-        kafkaTemplate.send(KafkaConfig.TOPIC_PEDIDOS_ACTUALIZADOS, pedido.getId().toString(), evento)
-            .whenComplete((result, ex) -> {
-                if (ex == null) {
-                    log.info("Publicado PedidoActualizado: pedidoId={} {} -> {} partition={} offset={}",
-                        pedido.getId(),
-                        event.estadoAnterior(),
-                        pedido.getEstado().name(),
-                        result.getRecordMetadata().partition(),
-                        result.getRecordMetadata().offset());
-                } else {
-                    log.error("Error publicando PedidoActualizado para pedidoId={}: {}",
-                        pedido.getId(), ex.getMessage());
-                }
-            });
+
+        // Send 1: topic de negocio
+        kafkaTemplate.send(KafkaConfig.TOPIC_PEDIDOS_ACTUALIZADOS, pedido.getId().toString(), evento);
+
+        // Send 2: auditoria
+        kafkaTemplate.send(KafkaConfig.TOPIC_PEDIDOS_AUDITORIA, pedido.getId().toString(), evento);
+
+        log.info("Publicado PedidoActualizado (tx Kafka): pedidoId={} {} -> {}",
+            pedido.getId(), event.estadoAnterior(), pedido.getEstado().name());
     }
 }
