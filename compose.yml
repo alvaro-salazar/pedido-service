@@ -1,5 +1,81 @@
 services:
 
+  cliente-postgres:
+    image: postgres:16-alpine
+    container_name: cliente_db
+    environment:
+      POSTGRES_DB: curso_springboot
+      POSTGRES_USER: devdb
+      POSTGRES_PASSWORD: a1b2c3d4
+    ports:
+      - "5433:5432"
+    volumes:
+      - cliente_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U devdb -d curso_springboot"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  cliente-service:
+    build: ../cliente-service
+    container_name: cliente_service
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    environment:
+      DB_URL: jdbc:postgresql://cliente-postgres:5432/curso_springboot
+      DB_USERNAME: devdb
+      DB_PASSWORD: a1b2c3d4
+      JPA_DDL: create-drop
+      # KEYCLOAK_ISSUER_URI usa el default del properties (localhost:8090) — valida el claim iss del token.
+      # KEYCLOAK_JWK_SET_URI apunta al contenedor keycloak (red Docker interna) para descargar claves públicas.
+      # Con ambos definidos Spring Boot crea UN solo JwtDecoder (jwk-set-uri tiene prioridad)
+      # que verifica la firma vía Docker network y valida el issuer contra localhost:8090.
+      KEYCLOAK_JWK_SET_URI: http://keycloak:8090/realms/curso-springboot/protocol/openid-connect/certs
+    depends_on:
+      cliente-postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+
+  producto-postgres:
+    image: postgres:16-alpine
+    container_name: producto_db
+    environment:
+      POSTGRES_DB: curso_springboot
+      POSTGRES_USER: devdb
+      POSTGRES_PASSWORD: a1b2c3d4
+    ports:
+      - "5435:5432"
+    volumes:
+      - producto_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U devdb -d curso_springboot"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  producto-service:
+    build: ../spring-boot-11/producto-service
+    container_name: producto_service
+    ports:
+      - "8082:8082"
+      - "8083:8083"
+    environment:
+      DB_URL: jdbc:postgresql://producto-postgres:5432/curso_springboot
+      DB_USERNAME: devdb
+      DB_PASSWORD: a1b2c3d4
+      JPA_DDL: create-drop
+      # Sobreescribe issuer-uri para fetch de claves vía red Docker interna.
+      # La validación del claim iss sigue usando el default localhost:8090.
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8090/realms/curso-springboot/protocol/openid-connect/certs
+    depends_on:
+      producto-postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+
   pedido-postgres:
     image: postgres:16-alpine
     container_name: pedido_db
@@ -67,11 +143,13 @@ services:
     volumes:
       - ./keycloak:/opt/keycloak/data/import
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8090/realms/master > /dev/null"]
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8090 && echo ok || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 20
       start_period: 30s
 
 volumes:
+  cliente_pgdata:
+  producto_pgdata:
   pedido_pgdata:

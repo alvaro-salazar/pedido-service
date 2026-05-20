@@ -1,6 +1,7 @@
 {
   "realm": "curso-springboot",
   "enabled": true,
+  "sslRequired": "none",
   "clients": [
     {
       "clientId": "cliente-service",
