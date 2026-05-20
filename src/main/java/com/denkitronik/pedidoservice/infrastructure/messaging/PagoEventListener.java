@@ -15,7 +15,8 @@ public class PagoEventListener {
 
     private final IPedidoRepository pedidoRepository;
 
-    @KafkaListener(topics = "pagos.confirmados", groupId = "pedido-pago-group")
+    @KafkaListener(topics = "pagos.confirmados", groupId = "pedido-pago-group",
+        properties = {"spring.json.value.default.type=com.denkitronik.pedidoservice.infrastructure.messaging.PagoConfirmadoEvent"})
     @Transactional
     public void onPagoConfirmado(PagoConfirmadoEvent evento) {
         log.info("Pago confirmado para pedido {}, monto: {}", evento.pedidoId(), evento.monto());
@@ -26,7 +27,8 @@ public class PagoEventListener {
         });
     }
 
-    @KafkaListener(topics = "pagos.rechazados", groupId = "pedido-pago-group")
+    @KafkaListener(topics = "pagos.rechazados", groupId = "pedido-pago-group",
+        properties = {"spring.json.value.default.type=com.denkitronik.pedidoservice.infrastructure.messaging.PagoRechazadoEvent"})
     @Transactional
     public void onPagoRechazado(PagoRechazadoEvent evento) {
         log.info("Pago rechazado para pedido {}", evento.pedidoId());
@@ -37,7 +39,8 @@ public class PagoEventListener {
         });
     }
 
-    @KafkaListener(topics = "pagos.reembolsados", groupId = "pedido-pago-group")
+    @KafkaListener(topics = "pagos.reembolsados", groupId = "pedido-pago-group",
+        properties = {"spring.json.value.default.type=com.denkitronik.pedidoservice.infrastructure.messaging.PagoReembolsadoEvent"})
     @Transactional
     public void onPagoReembolsado(PagoReembolsadoEvent evento) {
         log.info("Reembolso de {} para pedido {}", evento.montoReembolsado(), evento.pedidoId());
