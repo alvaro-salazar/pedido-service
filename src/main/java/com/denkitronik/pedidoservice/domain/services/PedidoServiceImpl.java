@@ -117,7 +117,7 @@ public class PedidoServiceImpl implements IPedidoService {
         }
 
         String descripcion = "Pedido #" + pedidoId + " - La Fogata Digital";
-        PagoIniciarRequest request = new PagoIniciarRequest(pedidoId, pedido.getTotal(), descripcion);
+        PagoIniciarRequest request = new PagoIniciarRequest(pedidoId, pedido.getClienteId(), pedido.getTotal(), descripcion);
         PagoIniciarResponse pagoResponse = pagoServiceClient.iniciarPago(request);
 
         pedido.setPagoPreferenciaId(String.valueOf(pagoResponse.pagoId()));
