@@ -64,6 +64,7 @@ public class PedidoEventPublisher {
         Pedido pedido = event.pedido();
         var payload = new PedidoActualizadoPayload(
             pedido.getId(),
+            pedido.getClienteId(),
             event.estadoAnterior(),
             pedido.getEstado().name()
         );
