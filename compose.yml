@@ -267,6 +267,8 @@ services:
       DB_PASS: notif123
       MAIL_HOST: mailhog
       MAIL_PORT: 1025
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
     depends_on:
       kafka:
         condition: service_healthy
