@@ -44,4 +44,21 @@ public class Pedido {
 
     @Column(name = "pago_preferencia_id")
     private String pagoPreferenciaId;
+
+    public void avanzarEstado(EstadoPedido nuevoEstado) {
+        boolean valida = switch (this.estado) {
+            case PENDIENTE       -> nuevoEstado == EstadoPedido.PAGO_CONFIRMADO
+                                 || nuevoEstado == EstadoPedido.CANCELADO;
+            case PAGO_CONFIRMADO -> nuevoEstado == EstadoPedido.CONFIRMADO
+                                 || nuevoEstado == EstadoPedido.COMPENSANDO;
+            case COMPENSANDO     -> nuevoEstado == EstadoPedido.REEMBOLSADO;
+            default              -> false;
+        };
+        if (!valida) {
+            throw new IllegalStateException(
+                "Transición inválida: " + this.estado + " → " + nuevoEstado +
+                " para pedido " + this.id);
+        }
+        this.estado = nuevoEstado;
+    }
 }

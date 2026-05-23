@@ -50,4 +50,26 @@ public class KafkaConfig {
                 .replicas(1)
                 .build();
     }
+
+    public static final String TOPIC_INVENTARIO_RESERVAS     = "inventario.reservas";
+    public static final String TOPIC_INVENTARIO_RESERVADO    = "inventario.reservado";
+    public static final String TOPIC_INVENTARIO_INSUFICIENTE = "inventario.insuficiente";
+    public static final String TOPIC_PAGOS_REEMBOLSOS        = "pagos.reembolsos.solicitados";
+
+    @Bean
+    public NewTopic topicInventarioReservas() {
+        return TopicBuilder.name(TOPIC_INVENTARIO_RESERVAS).partitions(3).replicas(1).build();
+    }
+    @Bean
+    public NewTopic topicInventarioReservado() {
+        return TopicBuilder.name(TOPIC_INVENTARIO_RESERVADO).partitions(3).replicas(1).build();
+    }
+    @Bean
+    public NewTopic topicInventarioInsuficiente() {
+        return TopicBuilder.name(TOPIC_INVENTARIO_INSUFICIENTE).partitions(3).replicas(1).build();
+    }
+    @Bean
+    public NewTopic topicPagosReembolsosSolicitados() {
+        return TopicBuilder.name(TOPIC_PAGOS_REEMBOLSOS).partitions(3).replicas(1).build();
+    }
 }
